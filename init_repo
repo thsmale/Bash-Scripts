@@ -1,6 +1,9 @@
+#!/bin/bash
 git init
 git add .
 git commit -m "first commit"
 git branch -M main
+#Add argument here to accept url of new repo
+#Substitute this var for the repo below 
 git remote add origin https://github.com/thsmale/Bash-Scripts.git
 git push -u origin main
