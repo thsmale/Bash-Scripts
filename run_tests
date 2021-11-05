@@ -1,0 +1,106 @@
+#!/bin/bash
+make clean
+make
+#If make doesnt compile then do not execute rest of script 
+if [ $? -ne 0 ] 
+then
+	exit
+fi
+
+#This is a bash function! You can access args by using $1 etc 
+run_tests(){ 
+	nargs=$#
+	executable=run
+	filepath=tests/
+	filename=t
+	test_path=$filepath$filename
+	myout_directory_name=myout
+	myout_filename=t
+	myout_path=$myout_directory_name'/'$myout_filename
+
+	if [ $nargs == 0 ] 
+	then
+		lower=1
+		#Check if tests directory exists 
+		upper=`ls $filepath/*.in | wc -l`
+		#upper=`ls tests/t*.in | wc -l`
+		if [ $? -ne 0 ] 
+		then
+			echo "Tests directory does not exist" 
+			exit
+		fi
+	elif [ $nargs == 1 ] 
+	then
+		lower=$1
+		upper=$1
+	elif [ $nargs == 2 ]
+	then
+		lower=$1
+		upper=$2
+	fi
+
+	#Put all my output into a directory
+	#So there aren't a bunch of t*.my files lying around
+	ls . | grep -wq $myout_directory_name
+	if [ $? -ne 0 ]
+	then
+		mkdir $myout_directory_name
+	fi
+
+	#Execute all tests
+	#Dump output files into myout_directory
+	i=$lower
+	while [[ $i -le $upper ]]
+	do 
+		if [ $i -lt 10 ] 
+		then
+			./$executable < $test_path'0'$i.in > $myout_path'0'$i.my
+		else
+			./$executable < $test_path$i.in > $myout_path$i.my
+			#./run < tests/t$i.in > t$i.my
+		fi
+		((i = i + 1))
+	done
+
+	#Compare output files with test files
+	i=$lower
+	while [[ $i -le $upper ]] 
+	do 
+		if [ $i -lt 10 ] 
+		then
+			diff -q $myout_path'0'$i.my $filepath$filename'0'$i.out
+		else
+			diff -q $myout_path$i.my $filepath$filename$i.out
+			#diff -q t$i.my tests/t$i.out
+		fi
+		#going to need to cheeck if no outfiles
+		if [ $? -ne 0 ] 
+		then
+			#trick vimdiff so it doesnt display 2 files to edit
+			if [ $i -lt 10 ] 
+			then
+				vim $myout_path'0'$i.my -c "vert diffsplit $test_path"'0'"$i.out"
+			else
+				vim $myout_path$i.my -c "vert diffsplit $test_path$i.out"
+			fi
+		fi
+		((i = i + 1))
+	done
+
+}
+
+#One is all the args the other is the number of args 
+args=$@
+nargs=$#
+if [ $nargs -le 2 ] 
+then
+	run_tests ${args}
+else
+	echo "Test script doesn't like the number of args"
+	echo -e "\t0 for all files \n\t1 for particular file\n\t2 for range"
+	exit
+fi
+
+
+
+	
